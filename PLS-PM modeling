@@ -1,0 +1,122 @@
+## R-Script - PLS Path modeling to predict species richness using LiDAR data 
+## author: Javier Lopatin 
+## mail: javier.lopatin@kit.edu & javierlopatin@gmail.com
+## Manuscript: Using Milti-structural Object-Based liDAR Approach to Estimate Vascular Plant Richness in Mediterranean Forest with Complex Structure
+## last changes: 28/01/2016
+## For more information on PLS-PM see: http://gastonsanchez.com/PLS_Path_Modeling_with_R.pdf
+
+
+library(plspm)
+
+##### set working directory
+setwd("direction/to/your/folder")
+
+### Load data ####
+datapls <- read.table("Richness_model.csv", header=T, sep=",", dec=".")   
+head(datapls)
+
+### Set the inner model
+# rows of the inner model matrix
+Hieght.Canopies  = c(0, 0, 0, 0, 0, 0, 0)
+Midle1.Canopies  = c(0, 0, 0, 0, 0, 0, 0)
+Midle2.Canopies  = c(0, 0, 0, 0, 0, 0, 0)
+Low.Canopies     = c(0, 0, 0, 0, 0, 0, 0)
+OBIA             = c(1, 1, 1, 1, 0, 0, 0)
+Topography       = c(0, 0, 0, 0, 0, 0, 0)
+Richness         = c(0, 0, 0, 0, 1, 1, 0)
+
+# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
+Q_inner = rbind(Hieght.Canopies, Midle1.Canopies,Midle2.Canopies, Low.Canopies, OBIA, Topography, Richness)
+
+# add column names (optional)
+colnames(Q_inner) = rownames(Q_inner)
+
+# plot the inner matrix
+innerplot(Q_inner)
+
+### Set the outer model
+# set the "Modes" of the relations: character vector indicating the type of measurement for each block.
+Q_modes = rep("A",7)
+
+# define list of indicators: what variables are associated with what latent variable: 
+# in the same orther than Q_inner: Hieght.Canopies, Midle1.Canopies,Midle2.Canopies, Low.Canopies, OBIA, Topography, Richness
+Q_outer = list (10:39, 40:69, 70:99, 100:129, 130:159, 160:189, c(6,7,8)) # this are just example numbers to make it simpler
+
+### Run first try!
+Q_pls = plspm(datapls, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+# keep the bootstrap validation "boot.val"=F in this first step to make it faster
+
+# Check quality of  the outer model: in the differents indices values should be over 0.7
+# this is a measure of how well construct are the blocks of predictors.
+Q_pls$unidim
+
+# check outer model. Loadings must be greater than 0.7, and communalites grater than 0.5:
+Q_pls$outer
+
+# plotting the loadings 
+plot(Q_pls, what = "loadings")
+
+# Another measure of block construction is the "crossloadings". This gives you the correlation of the variables with all Latent Variables.
+# The idea is to find if there are any "traitor" indicators. That means that the R should be higher within his own block or LV
+Q_pls$crossloading
+
+# now you can eliminate all variables with loading below 0.7
+# Also, internally is not possible to have negative loading. The proposed solution is to invert the scale of the ill-fated manifest variables:
+atapls$NCobertura_bajas = -1 * datapls$Cobertura_bajas 
+datapls$NC_Elev_IQ = -1 * datapls$C_Elev_IQ 
+datapls$NC_Elev_L2  = -1 * datapls$C_Elev_L2 
+
+### Run second try!
+# set again the list of indicators with the selected and inverted variables
+Q_outer = list (c(80,81,83), c(123,124), c(167), c(209,210), c(27,31,612),c(426,427,431,468,469,576,577,581), c(6,7,8))
+
+# run PLSPM
+Q_pls = plspm(datapls, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+summary(Q_pls)
+# check again for the indicators of model quality 
+
+# repeat the steps again until you are happy with your model
+
+### Predict Richness!
+# simulate the PLS-PM interactions. All variables are linear relationships. 
+# See: Lopatin, J., Galleguillos, M., Fassnacht, F. E., Ceballos, A., & Hernández, J. (2015). Using a Multistructural Object-Based LiDAR Approach to Estimate Vascular Plant Richness in Mediterranean Forests With Complex Structure. IEEE Geoscience and Remote Sensing Letters, 12(5), 1008–1012.
+# Create the outer model
+Hieght.Canopies<-((datapls$Canopy_A*Q_pls$outer$weight[1])+(datapls$Cober_A*Q_pls$outer$weight[2])+(datapls$STD_A*Q_pls$outer$weight[3]))
+Midle1.Canopies<-((datapls$Canopy_B*Q_pls$outer$weight[4])+(datapls$Cober_B*  Q_pls$outer$weight[5]))
+Midle2.Canopies<-(datapls$Cober_C*Q_pls$outer$weight[6])
+Low.Canopies<-   ((datapls$Canopy_D*Q_pls$outer$weight[7])+(datapls$Cober_D*Q_pls$outer$weight[8]))
+OBIA<-           ((datapls$Median_canopy*Q_pls$outer$weight[9])+(datapls$Median_cober*Q_pls$outer$weight[10])+(datapls$Low_cover*Q_pls$outer$weight[11]))
+Topography<-     ((datapls$M_GNLS_01N*Q_pls$outer$weight[12])+(datapls$M_GNLS_01P*Q_pls$outer$weight[13])+(datapls$M_GNLS_01X*Q_pls$outer$weight[14])+(datapls$M_MAXH_01N*Q_pls$outer$weight[15])+(datapls$M_MAXH_01P*Q_pls$outer$weight[16])+(datapls$O_ADEM_01N*Q_pls$outer$weight[17])+(datapls$O_ADEM_01P*Q_pls$outer$weight[18])+(datapls$O_ADEM_01X*Q_pls$outer$weight[19]))
+Rich<-           ((datapls$TREE_RICH*Q_pls$outer$weight[20])+(datapls$SHRUB_RICH*Q_pls$outer$weight[21])+(datapls$HERB_RICH*Q_pls$outer$weight[22]))
+summary(Rich)
+summary(n.Rich)
+summary(T_RICH)
+
+# Normalize the data
+norm.HC <- (Hieght.Canopies-mean(Hieght.Canopies))/sd(Hieght.Canopies)
+norm.MC1 <-(Midle1.Canopies-mean(Midle1.Canopies))/sd(Midle1.Canopies)
+norm.MC2 <-(Midle2.Canopies-mean(Midle2.Canopies))/sd(Midle2.Canopies)
+norm.LC <- (Low.Canopies-mean(Low.Canopies))/sd(Low.Canopies)
+norm.Topo<-(Topography-mean(Topography))/sd(Topography)
+norm.OBIA<-(OBIA-mean(OBIA))/sd(OBIA)
+
+# Create the inner model
+OBIA2<-(norm.MC1*0.8441+norm.MC2*0.0721-norm.HC*0.1252-norm.LC*0.2231)
+# predict Richness
+Observed <- Rich
+Predicted<- ((-OBIA2*0.3954-norm.Topo*0.5758)*sd(Observed)) + mean(Observed)
+Predicted
+Observed
+cor(Predicted, Observed)
+
+summary(Observed)
+summary(Predicted)
+
+hist(Observed, breaks=10)
+hist(Predicted, breaks=10)
+
+# Performance of the model
+r2 <- (cor(Predictedicted, Observederved, method="pearson"))^2
+RMSE <- sqrt(mean((Observed-Predicted)^2))
+%RMSE <- (RMSE/(max(Observed)-min(Observed)))*100
+bias <-1-coef(lm(Predicted ~ Observed-1))

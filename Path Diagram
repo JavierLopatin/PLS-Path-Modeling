@@ -1,0 +1,52 @@
+## R-Script - PLS Path Diagram
+## author: Javier Lopatin 
+## mail: javier.lopatin@kit.edu & javierlopatin@gmail.com
+## Manuscript: Using Milti-structural Object-Based liDAR Approach to Estimate Vascular Plant Richness in Mediterranean Forest with Complex Structure
+## last changes: 28/01/2016
+## For more information on PLS-PM see: http://gastonsanchez.com/PLS_Path_Modeling_with_R.pdf
+
+library(pathdiagram)
+
+### open plot window
+wall(xlim = c(-0.1, 1), ylim = c(0, 1))
+
+# Set the LV and their path coefficients
+LV1 = latent("Topography", x=0.45, y=0.90, rx=0.1, ry=0.08, cex=1.6)
+text(0.62,0.66,"-0.575*", pos=3, cex=1.3, col="blue")
+
+LV2 = latent("OBIA", x=0.45, y=0.10, rx=0.1, ry=0.08,  cex= 1.6)
+text(0.62,0.3,"-0.395*", cex=1.3, col="blue")
+
+LV2.1= latent("HC",     x=0.1, y=0.7, rx=0.1, ry=0.08, cex=1.6) 
+LV2.2= latent("MHC", x=0.1, y=0.5, rx=0.1, ry=0.08, cex=1.6) 
+LV2.3= latent("MLC", x=0.1, y=0.3, rx=0.1, ry=0.08, cex=1.6) 
+LV2.4= latent("LC",      x=0.1, y=0.1, rx=0.1, ry=0.08, cex=1.6) 
+text(0.27,0.6,"-0.125", cex=1.3, pos=3, col="blue")
+text(0.27,0.45,"0.844*", cex=1.3, pos=3, col="blue")
+text(0.27,0.25,"0.072", cex=1.3, pos=3, col="blue")
+text(0.27,0.1,"-0.223*", cex=1.3, pos=3, col="blue")
+
+LV3 = latent("Richness", x=0.75, y=0.5, rx=0.1, ry=0.08, cex=1.6)          
+
+draw(LV1)
+draw(LV2)
+draw(LV2.1)
+draw(LV2.2)
+draw(LV2.3)
+draw(LV2.4)
+draw(LV3)
+
+## Set the arrows in the inner model
+arrow(from =LV1 , to = LV3, start = "east", end = "north", lwd = 2, col = "gray80", length=0.2)
+arrow(from =LV2 , to = LV3, start = "east", end = "south", lwd = 2, col = "gray80", length=0.2)
+
+arrow(from =LV2.1 , to = LV2, start = "east", end = "west", lwd = 2, col = "gray80", length=0.2)
+arrow(from =LV2.2 , to = LV2, start = "east", end = "west", lwd = 2, col = "gray80", length=0.2)
+arrow(from =LV2.3 , to = LV2, start = "east", end = "west", lwd = 2, col = "gray80", length=0.2)
+arrow(from =LV2.4 , to = LV2, start = "east", end = "west", lwd = 2, col = "gray80", length=0.2)
+
+## TEXT R2 and Goodnes-of-Fit
+text(0.75,0.46,substitute(R^2 == "0.660*"), col="white", cex=1.2)
+text(0.73,0.93, "Godness-of-Fit = 0.820", cex=1.5, col="red")
+text(0.45,0.06,substitute(R^2 == "0.819*"), col="white", cex=1.2)
+

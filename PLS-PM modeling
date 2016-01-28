@@ -101,10 +101,10 @@ norm.Topo<-(Topography-mean(Topography))/sd(Topography)
 norm.OBIA<-(OBIA-mean(OBIA))/sd(OBIA)
 
 # Create the inner model
-OBIA2<-(norm.MC1*0.8441+norm.MC2*0.0721-norm.HC*0.1252-norm.LC*0.2231)
+OBIA2<-(norm.HC*Q_pls$path_coefs[5]+norm.MC1*Q_pls$path_coefs[12]+norm.MC2*Q_pls$path_coefs[19]+norm.LC*Q_pls$path_coefs[26])
 # predict Richness
 Observed <- Rich
-Predicted<- ((-OBIA2*0.3954-norm.Topo*0.5758)*sd(Observed)) + mean(Observed)
+Predicted<- ((OBIA2*Q_pls$path_coefs[35]+norm.Topo*Q_pls$path_coefs[42])*sd(Observed)) + mean(Observed)
 Predicted
 Observed
 cor(Predicted, Observed)

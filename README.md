@@ -1,4 +1,5 @@
-# PLS Path Modeling 
+![alt text](https://github.com/JavierLopatin/PLS-Path-Modeling/blob/master/figures/paper_fronPage.png)
+
 
 This R-script gives an example of the use of PLS-PM in Geoscience studies. In this case Plant Vascular Richness is model using LiDAR data in a complex Mediterranean Forest in Chile.
 
